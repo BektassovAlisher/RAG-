@@ -10,7 +10,6 @@ import os
 
 PDF_PATH = "doc/virus-book.pdf"
 
-# 1. Загрузка и разбиение PDF
 def csv_loader(pdf_path="doc/virus-book.pdf"):
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF файл не найден: {pdf_path}")
@@ -26,14 +25,12 @@ def csv_loader(pdf_path="doc/virus-book.pdf"):
     return splitter.split_documents(pdf)
 
 
-# 2. Создание эмбеддингов
 def create_embedding():
     return HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'}  # используйте 'cuda' если есть GPU
     )
 
-# 3. Векторное хранилище
 def create_vectorstore(pdf_documents, persist_dir="chroma_db"):
     embedding = create_embedding()
     
@@ -44,7 +41,6 @@ def create_vectorstore(pdf_documents, persist_dir="chroma_db"):
     )
     return vectorstore
 
-# 4. Загрузка существующего векторного хранилища
 def load_vectorstore(persist_dir="chroma_db"):
     if not os.path.exists(persist_dir):
         raise FileNotFoundError(f"Векторное хранилище не найдено: {persist_dir}")
@@ -55,7 +51,6 @@ def load_vectorstore(persist_dir="chroma_db"):
         embedding_function=embedding
     )
 
-# 5. Инициализация векторного хранилища
 def initialize_vectorstore(csv_path="doc/virus-book.pdf", 
                           persist_dir="chroma_db", 
                           force_recreate=False):
@@ -68,22 +63,18 @@ def initialize_vectorstore(csv_path="doc/virus-book.pdf",
         print(f"Загружено {len(csv_documents)} документов")
         return create_vectorstore(csv_documents, persist_dir)
 
-# 6. RAG Chain
 def build_rag_chain(persist_dir="chroma_db", k=3):
-    # Проверяем наличие векторного хранилища
     if not os.path.exists(persist_dir):
         raise FileNotFoundError(
             f"Векторное хранилище не найдено в {persist_dir}. "
             "Запустите initialize_vectorstore() сначала."
         )
     
-    # Инициализация компонентов
     llm = Ollama(model="qwen2:1.5b",temperature=0.1)  
     embedding = create_embedding()
     db = Chroma(persist_directory=persist_dir, embedding_function=embedding)
     retriever = db.as_retriever(search_kwargs={"k": k})
 
-    # Промпт
     prompt = ChatPromptTemplate.from_template("""
 You are an intelligent assistant that answers questions based on computer virus data.
 Use only the provided context from the database to answer the question.
@@ -106,7 +97,6 @@ Instructions:
 
 """)
 
-    # Собираем цепочку
     rag_chain = (
         {
             "context": retriever | (lambda docs: "\n\n".join([doc.page_content for doc in docs])),
@@ -121,10 +111,8 @@ Instructions:
 
 
 
-# Использование
 if __name__ == "__main__":
     try:
-        # Шаг 1: Инициализация векторного хранилища (только один раз)
         print("=" * 50)
         print("Инициализация векторного хранилища...")
         print("=" * 50)
@@ -133,13 +121,11 @@ if __name__ == "__main__":
             force_recreate=False  
         )
         
-        # Шаг 2: Создание RAG цепочки
         print("\n" + "=" * 50)
         print("Создание RAG цепочки...")
         print("=" * 50)
         chain = build_rag_chain()
         
-        # Шаг 3: Задаем вопросы
         questions = [
             "What is the virus"
         ]

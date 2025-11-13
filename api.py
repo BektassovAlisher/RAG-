@@ -4,7 +4,6 @@ from rag import build_rag_chain
 
 app = FastAPI(title="RAG API")
 
-# Инициализация RAG цепочки при запуске
 try:
     qa_chain = build_rag_chain()
 except Exception as e:
