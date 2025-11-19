@@ -9,4 +9,4 @@ chromadb
 sentence-transformers
 pandas
 pydantic
-
+requests
